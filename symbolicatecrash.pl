@@ -166,9 +166,7 @@ sub getSymbolPathFor_dsymUuid{
     
     # Convert a uuid from the crash log, like "c42a118d722d2625f2357463535854fd",
     # to canonical format like "C42A118D-722D-2625-F235-7463535854FD".
-    my $myuuid = uc($uuid);    # uuid's in Spotlight database are all uppercase
-    $myuuid =~ /(.{8})(.{4})(.{4})(.{4})(.{12})/;
-    $myuuid = "$1-$2-$3-$4-$5";
+    my $myuuid = format_uuid($uuid);
     
     # Do the search in Spotlight.
     my $cmd = "mdfind \"com_apple_xcode_dsym_uuids == $myuuid\"";
@@ -203,63 +201,6 @@ sub getSymbolPathFor_dsymUuid{
     
     print STDERR "\@dsym_paths = ( @dsym_paths )\n" if $opt{v};
     print STDERR "\@exec_names = ( @exec_names )\n" if $opt{v};
-    
-#    my @app_bundles_next_to_dsyms;
-#    foreach my $dsymdir (@dsym_paths) {
-#        my ($dsympath) = $dsymdir =~ /(^.*)\.dSYM/i;
-#        push(@app_bundles_next_to_dsyms, $dsympath . '.app');
-#    }
-#    
-#    my @exec_paths  = ();
-#    foreach my $exec_name (@exec_names) {
-#        #We need to find all of the apps with the given name (both in- and outside of any archive)
-#        #First, use spotlight to find un-archived apps:
-#        my $cmd = "mdfind \"kMDItemContentType == com.apple.application-bundle && (kMDItemAlternateNames == '$exec_name.app' || kMDItemDisplayName == '$exec_name' || kMDItemDisplayName == '$exec_name.app')\"";
-#        print STDERR "Running $cmd\n" if $opt{v};
-#        
-#        my @app_bundles = (@app_bundles_next_to_dsyms, split(/\n/, `$cmd`));
-#        foreach my $app_bundle (@app_bundles) {
-#            if( -f "$app_bundle/$exec_name") {
-#                push(@exec_paths, "$app_bundle/$exec_name");
-#            }
-#        }
-#        
-#        #Find any naked executables
-#        $cmd = "mdfind \"kMDItemContentType == public.unix-executable && kMDItemDisplayName == '$exec_name'\"";
-#        print STDERR "Running $cmd\n" if $opt{v};
-#        
-#        foreach my $exec_file (split(/\n/, `$cmd`)) {
-#            if( -f "$exec_file") {
-#                push(@exec_paths, "$exec_file");
-#            }
-#        }
-#        
-#        #Next, try to find paths within any archives
-#        foreach my $archive_path (@archive_paths) {
-#            my $cmd = "find \"$archive_path/Products\" -name \"$exec_name.app\"";
-#            print STDERR "Running $cmd\n" if $opt{v};
-#            
-#            foreach my $app_bundle (split(/\n/, `$cmd`)) {
-#                if( -f "$app_bundle/$exec_name") {
-#                    push(@exec_paths, "$app_bundle/$exec_name");
-#                }
-#            }
-#        }
-#    }
-#    
-#    if ( @exec_paths >= 1 ) {
-#        foreach my $exec (@exec_paths) {
-#            if ( !matchesUUID($exec, $uuid, $arch) ) {
-#                print STDERR "UUID of executable is: $uuid\n" if $opt{v};
-#                print STDERR "Executable name: $exec\n\n" if $opt{v};
-#                print STDERR "UUID doesn't match dsym for executable $exec\n" if $opt{v};
-#            } else {
-#                print STDERR "Found executable $exec\n" if $opt{v};
-#                return $exec;
-#            }
-#        }
-#    }
-
 
     if (@dsym_paths > 0) {
     	my $exec = $dsym_paths[0];
@@ -399,6 +340,10 @@ sub getSymbolPathFor {
                 }
             }
         }
+    }
+    
+    if (!defined($out_path)) {
+        print STDERR "-- NO MATCH\n"  if $opt{v};
     }
     
     # if $out_path is defined here, then we have already verified that the UUID matches
