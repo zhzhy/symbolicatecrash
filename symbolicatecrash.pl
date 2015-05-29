@@ -372,6 +372,21 @@ sub getSymbolPathFor {
                 last if defined $out_path;
             }
     }
+    
+    if ( !defined($out_path) ) {
+        my $pwd = `pwd`;
+        print STDERR "Searching in current directory $pwd" if $opt{v};
+        my @results = `find $bin*`;
+        foreach my $result (@results) {
+            if ($result =~ /^$bin.*$bin$/) {
+                $result =~ s/\n//;
+                $out_path = $result;
+                
+                last;
+            }
+        }
+    }
+    
     # if $out_path is defined here, then we have already verified that the UUID matches
     if ( !defined($out_path) ) {
         print STDERR "Searching in Spotlight for dsym with UUID of $uuid\n" if $opt{v};
