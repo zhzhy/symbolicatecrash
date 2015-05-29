@@ -143,6 +143,15 @@ sub getSymbolPathFor_searchpaths {
     return @result;
 }
 
+sub format_uuid {
+    my ($uuid) = @_;
+    my $uppercase_uuid = uc($uuid);
+    $uppercase_uuid =~ /(.{8})(.{4})(.{4})(.{4})(.{12})/;
+    $uppercase_uuid = "$1-$2-$3-$4-$5";
+    
+    return $uppercase_uuid;
+}
+
 sub getSymbolPathFor_uuid{
     my ($uuid, $uuidsPath) = @_;
     $uuid or return undef;
@@ -380,9 +389,14 @@ sub getSymbolPathFor {
         foreach my $result (@results) {
             if ($result =~ /^$bin.*$bin$/) {
                 $result =~ s/\n//;
-                $out_path = $result;
-                
-                last;
+                my @uuids_included = `dwarfdump --u $result`;
+                my $formated_uuid = format_uuid($uuid);
+                foreach my $uuid_included (@uuids_included) {
+                    if ($uuid_included =~ /$formated_uuid/) {
+                        $out_path = $result;
+                        last;
+                    }
+                }
             }
         }
     }
